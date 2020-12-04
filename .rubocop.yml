@@ -1,0 +1,35 @@
+require: rubocop-rails
+
+AllCops:
+  TargetRubyVersion: 2.6.6
+  NewCops: disable
+  Exclude:
+    - 'app.rb'
+    - 'app/models/paper_trail/version.rb'
+    - 'bin/*'
+    - 'config/deploy.rb'
+    - 'config/initializers/devise.rb'
+    - 'config/initializers/rack_attack.rb'
+    - 'config/initializers/simple_form.rb'
+    - 'config/initializers/simple_form_bootstrap.rb'
+    - 'db/**/*'
+    - 'lib/tasks/auto_annotate_models.rake'
+    - 'node_modules/**/*'
+
+Bundler/OrderedGems:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 20
+
+Style/AsciiComments:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/EmptyMethod:
+  EnforcedStyle: expanded

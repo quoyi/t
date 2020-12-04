@@ -1,0 +1,17 @@
+zh-CN:
+  users:
+    passwords:
+      new:
+        forgot: 密码找回
+        send: 发送验证码
+    registrations:
+      new:
+        submit: 注册账号
+    sessions:
+      new:
+        submit: 登录系统
+    unlocks:
+      new:
+        unlock: 账号解锁
+        send: 发送验证码
+

@@ -1,0 +1,194 @@
+# frozen_string_literal: true
+
+# - https://guides.rubyonrails.org/rails_application_templates.html
+# - https://ruby-china.github.io/rails-guides/rails_application_templates.html
+# - https://www.rubydoc.info/github/wycats/thor/master/Thor/Actions
+
+def source_paths
+  [__dir__]
+end
+
+# run('bundle config --delete mirror.https://rubygems.org')
+run('bundle config --local mirror.https://rubygems.org https://gems.ruby-china.com')
+run('bundle lock --add-platform x86-mingw32 x86-mswin32 x64-mingw32 java')
+run('spring binstub --all')
+
+rails_command('webpacker:install:erb')
+rails_command('active_storage:install')
+rails_command('action_mailbox:install')
+rails_command('action_text:install')
+
+gem_group :development, :test do
+  gem 'action-cable-testing'
+  gem 'amazing_print'
+  gem 'annotate'
+  gem 'bullet', github: 'flyerhzm/bullet'
+  gem 'factory_bot_rails'
+  # gem 'i18n-debug'
+  gem 'pry'
+  gem 'pry-byebug'
+  gem 'rubocop', require: false
+  gem 'rubocop-rails', require: false
+  gem 'squasher', require: false
+end
+
+gem_group :development do
+  gem 'better_errors'
+  gem 'binding_of_caller'
+  gem 'capistrano', '~> 3.6'
+  gem 'capistrano-bundler'
+  gem 'capistrano-passenger'
+  gem 'capistrano-rails'
+  gem 'capistrano-rails-db'
+  gem 'capistrano-rvm'
+end
+
+gem 'devise'
+# gem 'omniauth'
+gem 'omniauth-github'
+gem 'omniauth-facebook'
+gem 'omniauth-twitter'
+gem 'omniauth-wechat-oauth2'
+gem 'simple_form'
+# gem 'nested_form'
+gem 'ransack'
+gem 'rucaptcha'
+gem 'recaptcha'
+gem 'bulk_insert', github: 'huacnlee/bulk_insert', branch: 'fix-for-rails-6.1'
+gem 'by_star', github: 'radar/by_star'
+gem 'kaminari'
+gem 'sidekiq'
+gem 'lograge'
+gem 'rack-cors', require: 'rack/cors'
+# gem 'rails-i18n'
+gem 'hashid-rails', '~> 1.0'
+gem 'figaro'
+gem 'ancestry'
+gem 'paper_trail'
+# gem 'paper_trail_manager'
+gem 'faker', github: 'faker-ruby/faker', branch: :master
+gem 'faraday'
+gem 'enumize'
+gem 'sanitize'
+gem 'rack-attack'
+gem 'action-store'
+gem 'activestorage-aliyun'
+gem 'pghero', github: 'ankane/pghero'
+# gem 'exception-track'
+gem 'exception_notification'
+
+after_bundle do
+  run('spring stop')
+
+  ['.pryrc', '.rubocop.yml', 'Capfile'].each { |file| copy_file(file, file) }
+  %w[app config db lib .github].each { |dir| directory(dir) }
+  environment("config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }", env: 'development')
+  environment("config.action_mailer.default_url_options = { host: 'localhost' }", env: 'production')
+
+  # PaperTrail
+  generate('paper_trail:install')
+
+  # Figaro
+  append_to_file '.gitignore', 'config/application.yml'
+  insert_into_file 'config/spring.rb', after: "Spring.watch(\n" do
+    <<~RUBY
+      "config/application.yml",
+    RUBY
+  end
+
+  # Ransack
+  insert_into_file 'config/application.rb', after: %("boot"\n) do
+    <<~RUBY
+
+      require File.expand_path('boot', __dir__)
+      ENV['RANSACK_FORM_BUILDER'] = '::SimpleForm::FormBuilder'
+    RUBY
+  end
+
+  application do
+    <<~RUBY
+      config.action_cable.mount_path = '/cable'
+      config.active_job.queue_adapter = :sidekiq
+
+      config.cache_store = :redis_cache_store, { url: ENV['REDIS_URL'] || 'redis://localhost:6379/1' }
+
+      config.generators do |g|
+        g.helper false
+        g.stylesheets false
+      end
+
+      config.i18n.load_path += Dir[Rails.root.join("config/locales/**/*.{rb,yml}")]
+      config.i18n.available_locales = ['zh-CN', 'en', 'zh-TW']
+      config.i18n.default_locale = 'zh-CN'
+
+      config.responders.flash_keys = [:success, :error]
+
+      config.time_zone = 'Beijing'
+    RUBY
+  end
+
+  # Falcon
+  packages = [
+    'jquery',
+    'popper.js',
+    'bootstrap',
+    '@fortawesome/fontawesome-free',
+    '@ttskch/select2-bootstrap4-theme',
+    'datatables',
+    'datatables.net-bs4',
+    'datatables.net-responsive',
+    'datatables.net-responsive-bs4',
+    'chart.js',
+    'dropzone',
+    'flatpickr',
+    'is_js',
+    'leaflet',
+    'leaflet.markercluster',
+    'leaflet.tilelayer.colorfilter',
+    'lodash',
+    'owl.carousel',
+    'perfect-scrollbar',
+    'resolve-url-loader',
+    'select2',
+    'sticky-kit',
+    'stickyfilljs',
+    'typed.js'
+  ].join(' ')
+  run("yarn add #{packages}")
+
+  append_to_file 'app/javascript/packs/application.js' do
+    <<~JAVASCRIPT
+
+      require.context("../images", true)
+
+      // Stylesheets
+      import "../stylesheets/application";
+
+      import '@fortawesome/fontawesome-free/js/all';
+      import 'bootstrap/dist/js/bootstrap';
+      // import "stickyfilljs/dist/stickyfill";
+      import "sticky-kit/dist/sticky-kit";
+      // import "is_js/is";
+      // import "lodash/lodash";
+      // import "perfect-scrollbar/dist/perfect-scrollbar";
+      // import "chart.js/dist/Chart";
+      import "datatables/media/js/jquery.dataTables";
+      import "datatables.net-bs4/js/dataTables.bootstrap4";
+      import "datatables.net-responsive/js/dataTables.responsive";
+      import "datatables.net-responsive-bs4/js/responsive.bootstrap4";
+      import "leaflet/dist/leaflet";
+      import "leaflet.markercluster/dist/leaflet.markercluster";
+      import "leaflet.tilelayer.colorfilter/src/leaflet-tilelayer-colorfilter";
+      import "owl.carousel/dist/owl.carousel"; // 目前仅静态页面使用
+
+      import "./theme";
+      import "./events";
+    JAVASCRIPT
+  end
+
+  rails_command('db:drop db:create db:migrate')
+
+  git :init
+  git add: '.'
+  git commit: " -m 'Initial project'"
+end
